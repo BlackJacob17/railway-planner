@@ -145,7 +145,16 @@ app.use((err, req, res, next) => {
 });
 
 // Force port to 5001 regardless of environment variable
-const PORT = 5001;
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('MongoDB connected successfully'))
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  });
+
+// Use environment variable with fallback to 5001
+const PORT = process.env.PORT || 5001;
 console.log(`Starting server on port ${PORT}...`);
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
