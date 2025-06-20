@@ -14,7 +14,8 @@ const reportRoutes = require('./routes/reports');
 const app = express();
 const path = require('path');
 
-const __dirname = path.resolve();
+// In Vercel serverless functions, __dirname is already defined
+// No need to redefine it
 // Middleware
 const allowedOrigins = [
   'http://localhost:3000',
