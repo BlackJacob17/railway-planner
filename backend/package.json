@@ -7,7 +7,9 @@
     "test:watch": "jest --watch",
     "test:ci": "jest --ci --coverage",
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "build": "npm run build",
+    "start:prod": "npm run build && node server.js"
   },
   "keywords": [],
   "author": "",

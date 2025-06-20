@@ -12,7 +12,9 @@ const reviewRoutes = require('./routes/reviews');
 const reportRoutes = require('./routes/reports');
 
 const app = express();
+const path = require('path');
 
+const __dirname = path.resolve();
 // Middleware
 app.use(cors({
   origin: ['http://localhost:3000', 'https://railway-planner-frontend.onrender.com'],
@@ -152,7 +154,10 @@ mongoose.connect(process.env.MONGODB_URI)
     console.error('MongoDB connection error:', err);
     process.exit(1);
   });
-
+app.use(express.static(path.join(__dirname, 'frontend/build')));
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend/build', 'index.html'));
+});
 // Use environment variable with fallback to 5001
 const PORT = process.env.PORT || 5001;
 console.log(`Starting server on port ${PORT}...`);
