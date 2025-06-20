@@ -1,52 +1,113 @@
+console.log('Starting server initialization...');
+
+// Load environment variables first
 require('dotenv').config();
+console.log('Environment variables loaded');
+
+// Add error handling at the very top
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-
-// Import routes
-const authRoutes = require('./routes/auth');
-const stationRoutes = require('./routes/stations');
-const trainRoutes = require('./routes/trains');
-const bookingRoutes = require('./routes/bookings');
-const reviewRoutes = require('./routes/reviews');
-const reportRoutes = require('./routes/reports');
-
-const app = express();
 const path = require('path');
+console.log('Required core modules');
+
+// Initialize express app
+const app = express();
+console.log('Express app initialized');
 
 // In Vercel serverless functions, __dirname is already defined
-// No need to redefine it
-// Middleware
-const allowedOrigins = [
-  'http://localhost:3000',
-  'https://railway-planner-ten.vercel.app',
-  'https://frontend-nfkhwvl6d-prabhavs-projects-5a6014e5.vercel.app',
-  'https://railway-planner-frontend.vercel.app'
-];
+console.log('Middleware initialization starting...');
 
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    // Check if the origin is in the allowed list
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = `The CORS policy for this site does not allow access from the specified origin: ${origin}`;
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
+// Enable CORS with detailed logging - temporarily allowing all origins for debugging
+console.log('CORS: Allowing all origins for debugging');
+
+const corsOptions = {
+  origin: '*', // Allow all origins for now
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  exposedHeaders: ['Content-Range', 'X-Total-Count', 'X-Total'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'x-auth-token'],
+  exposedHeaders: ['Content-Range', 'X-Total-Count', 'X-Total', 'x-auth-token'],
   maxAge: 86400 // 24 hours
-}));
+};
+
+app.use(cors(corsOptions));
+console.log('CORS middleware configured');
 
 // Handle preflight requests
-app.options('*', cors());
+app.options('*', cors(corsOptions));
+console.log('Preflight requests handler configured');
 
 app.use(express.json());
+console.log('JSON parser middleware configured');
+
+// Log all requests
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
+  next();
+});
+console.log('Request logging middleware configured');
+
+// Import routes with error handling
+console.log('Importing routes...');
+try {
+  const authRoutes = require('./routes/auth');
+  const stationRoutes = require('./routes/stations');
+  const trainRoutes = require('./routes/trains');
+  const bookingRoutes = require('./routes/bookings');
+  const reviewRoutes = require('./routes/reviews');
+  const reportRoutes = require('./routes/reports');
+  
+  // Routes
+  app.use('/api/auth', authRoutes);
+  app.use('/api/stations', stationRoutes);
+  app.use('/api/trains', trainRoutes);
+  app.use('/api/bookings', bookingRoutes);
+  app.use('/api/reviews', reviewRoutes);
+  app.use('/api/reports', reportRoutes);
+  
+  // Health check endpoint
+  app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'Server is healthy' });
+  });
+  
+  console.log('All routes configured successfully');
+} catch (error) {
+  console.error('Error setting up routes:', error);
+  process.exit(1);
+}
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method
+  });
+  
+  res.status(err.status || 500).json({
+    error: {
+      message: err.message || 'Internal Server Error',
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    }
+  });
+});
+console.log('Error handling middleware configured');
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not Found' });
+});
 
 // Database connection
 const connectDB = async () => {
@@ -134,54 +195,39 @@ const connectDB = async () => {
       console.error('4. Network connectivity issues');
     }
     
-    console.error('\n🔧 Troubleshooting steps:');
-    console.error('1. Check if you can access MongoDB Atlas dashboard in your browser');
-    console.error('2. Try connecting using MongoDB Compass with the same connection string');
-    console.error('3. Try using a different network (e.g., mobile hotspot)');
-    console.error('4. Check if your ISP is blocking MongoDB connections');
-    console.error('5. Try using a VPN to rule out network issues');
-    
-    console.error('\n🔗 MongoDB Atlas Network Access URL:');
-    console.error('https://cloud.mongodb.com/v2#/security/network/accessList');
-    
-    process.exit(1);
+    // Exit with error code in production
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    }
   }
 };
 
-// Connect to MongoDB
-connectDB();
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/stations', stationRoutes);
-app.use('/api/trains', trainRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/reports', reportRoutes);
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send('Something broke!');
-});
-
-// Force port to 5001 regardless of environment variable
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB connected successfully'))
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
-  });
-app.use(express.static(path.join(__dirname, 'frontend/build')));
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend/build', 'index.html'));
-});
-// Use environment variable with fallback to 5001
-const PORT = process.env.PORT || 5001;
-console.log(`Starting server on port ${PORT}...`);
-app.listen(PORT, '0.0.0.0', () => {
+// Only start the server if not in Vercel environment
+if (process.env.VERCEL !== '1') {
+  const PORT = process.env.PORT || 5001;
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`MongoDB URI: ${process.env.MONGODB_URI ? 'Set' : 'Not set'}`);
-});
+  });
+  
+  // Handle unhandled promise rejections
+  process.on('unhandledRejection', (err, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', err);
+    server.close(() => process.exit(1));
+  });
+}
+
+// Serve static files from React app in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../frontend/build')));
+  
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+  });
+}
+
+console.log('Server initialization complete');
+
+// Export the Express API for Vercel
+module.exports = app;

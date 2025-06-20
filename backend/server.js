@@ -21,7 +21,10 @@ const allowedOrigins = [
   'http://localhost:3000',
   'https://railway-planner-ten.vercel.app',
   'https://frontend-nfkhwvl6d-prabhavs-projects-5a6014e5.vercel.app',
-  'https://railway-planner-frontend.vercel.app'
+  'https://railway-planner-frontend.vercel.app',
+  'https://railway-planner-1.onrender.com',
+  'https://railway-planner.onrender.com',
+  'https://railway-planner-backend.onrender.com'
 ];
 
 app.use(cors({
@@ -152,7 +155,7 @@ const connectDB = async () => {
 // Connect to MongoDB
 connectDB();
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/stations', stationRoutes);
 app.use('/api/trains', trainRoutes);
@@ -160,29 +163,50 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/reports', reportRoutes);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send('Something broke!');
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
 
-// Force port to 5001 regardless of environment variable
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB connected successfully'))
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Railway Planner API',
+    status: 'running',
+    timestamp: new Date().toISOString()
   });
-app.use(express.static(path.join(__dirname, 'frontend/build')));
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend/build', 'index.html'));
 });
-// Use environment variable with fallback to 5001
-const PORT = process.env.PORT || 5001;
-console.log(`Starting server on port ${PORT}...`);
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`MongoDB URI: ${process.env.MONGODB_URI ? 'Set' : 'Not set'}`);
+
+// Serve static files from React app if in production
+if (process.env.NODE_ENV === 'production') {
+  // Set static folder
+  app.use(express.static(path.join(__dirname, '../frontend/build')));
+  
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+  });
+}
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err.stack);
+  res.status(500).json({
+    status: 'error',
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : {}
+  });
+});
+// Start the server
+const PORT = process.env.PORT || 10000;
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`MongoDB URI: ${process.env.MONGODB_URI ? 'Set' : 'Not set'}`);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', err);
+  server.close(() => process.exit(1));
 });

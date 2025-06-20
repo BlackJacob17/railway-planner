@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: railway-planner-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        fromDatabase:
+          name: railway-planner-db
+          property: connectionString
+    plan: free
+
+databases:
+  - name: railway-planner-db
+    databaseName: railway_planner
+    user: railway_planner_user
+    plan: free
