@@ -39,7 +39,7 @@ app.use(cors({
     }
     return callback(null, true);
   },
->>>>>>> 125a2a4 (Update CORS configuration to allow frontend domains)
+
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
