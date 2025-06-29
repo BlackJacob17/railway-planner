@@ -1,8 +1,10 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline, CircularProgress, Box } from '@mui/material';
 import { SnackbarProvider } from 'notistack';
+import { useDispatch } from 'react-redux';
+import { loadUser } from './store/slices/authSlice';
 
 // --- Theme ---
 import theme from './theme/theme';
@@ -82,6 +84,16 @@ const AppRoutes = () => {
 };
 
 function App() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    // Load user when the app starts
+    console.log('App mounted, loading user...');
+    dispatch(loadUser())
+      .then(() => console.log('User loaded successfully'))
+      .catch((error) => console.error('Failed to load user:', error));
+  }, [dispatch]);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
