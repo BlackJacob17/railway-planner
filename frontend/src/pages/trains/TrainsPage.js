@@ -4,9 +4,10 @@ import { useSnackbar } from 'notistack';
 import { useNavigate } from 'react-router-dom';
 import { highlightPattern, containsPattern } from '../../utils/searchUtils';
 import priceUtils from '../../utils/priceBST';
-const { createPriceBST } = priceUtils;
 import PriceRangeFilter from '../../components/PriceRangeFilter';
 import api from '../../services/api';
+
+const { createPriceBST } = priceUtils;
 import {
   Box,
   Button,
