@@ -41,7 +41,8 @@ const UnauthorizedPage = lazy(() => import('./pages/errors/UnauthorizedPage'));
 const AppRoutes = () => {
   console.log('AppRoutes rendering...');
   return (
-    <Routes>
+    <Router basename="/">
+      <Routes>
       {/* --- Public Routes --- */}
       <Route element={<AuthLayout />}>
         <Route path="login" element={<LoginPage />} />
@@ -78,8 +79,9 @@ const AppRoutes = () => {
 
       {/* --- Error Routes --- */}
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </Router>
   );
 };
 
