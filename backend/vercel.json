@@ -14,8 +14,7 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production",
-    "MONGODB_URI": "@railway_planner_mongodb_uri"
+    "NODE_ENV": "production"
   },
   "build": {
     "env": {
