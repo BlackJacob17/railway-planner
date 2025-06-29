@@ -57,17 +57,17 @@ api.interceptors.response.use(
 // Auth API methods
 export const register = async (userData) => {
   try {
-    const { data } = await api.post('/auth/register', userData);
+    const { data } = await api.post('/api/auth/register', userData);
     return data;
   } catch (error) {
-    console.error('Register error:', error);
+    console.error('Registration error:', error);
     throw error;
   }
 };
 
 export const login = async ({ email, password }) => {
   try {
-    const { data } = await api.post('/auth/login', {
+    const { data } = await api.post('/api/auth/login', {
       email,
       password
     });
@@ -85,7 +85,7 @@ export const logout = async () => {
 
 export const forgotPassword = async (email) => {
   try {
-    const { data } = await api.post('/auth/forgot-password', { email });
+    const { data } = await api.post('/api/auth/forgot-password', { email });
     return data;
   } catch (error) {
     console.error('Forgot password error:', error);
@@ -95,7 +95,7 @@ export const forgotPassword = async (email) => {
 
 export const resetPassword = async ({ token, password }) => {
   try {
-    const { data } = await api.put(`/auth/reset-password/${token}`, { password });
+    const { data } = await api.post(`/api/auth/reset-password/${token}`, { password });
     return data;
   } catch (error) {
     console.error('Reset password error:', error);
@@ -105,7 +105,7 @@ export const resetPassword = async ({ token, password }) => {
 
 export const updateUserProfile = async (profileData) => {
   try {
-    const { data } = await api.put('/auth/me', profileData);
+    const { data } = await api.put('/api/auth/me', profileData);
     return data;
   } catch (error) {
     console.error('Update profile error:', error);
@@ -115,7 +115,7 @@ export const updateUserProfile = async (profileData) => {
 
 export const changePassword = async (passwordData) => {
   try {
-    const { data } = await api.put('/auth/change-password', passwordData);
+    const { data } = await api.put('/api/auth/change-password', passwordData);
     return data;
   } catch (error) {
     console.error('Change password error:', error);
@@ -125,25 +125,29 @@ export const changePassword = async (passwordData) => {
 
 export const getMe = async () => {
   try {
-    console.log('Fetching user data from /auth/me...');
+    // First try to get from localStorage
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    console.log('Current token:', token ? token.substring(0, 10) + '...' : 'No token found');
     
-    const { data } = await api.get('/auth/me');
-    console.log('User data received:', data);
+    if (!token) {
+      throw new Error('No token found');
+    }
+    
+    // Set the authorization header
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    
+    // Make the request
+    const { data } = await api.get('/api/auth/me');
     return data;
   } catch (error) {
-    console.error('Get me error:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      config: {
-        url: error.config?.url,
-        method: error.config?.method,
-        headers: error.config?.headers
-      }
-    });
+    console.error('Get user error:', error);
+    
+    // Clear invalid token
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+      delete api.defaults.headers.common['Authorization'];
+    }
+    
     throw error;
   }
 };
