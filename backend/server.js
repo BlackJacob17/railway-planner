@@ -30,19 +30,24 @@ if (process.env.NODE_ENV !== 'production') {
 // Add any additional required origins
 const requiredOrigins = [
   'https://railway-planner-frontend1.vercel.app',
-  'https://railway-planner-frontend.vercel.app'
+  'https://railway-planner-frontend.vercel.app',
+  'https://railway-planner-y1h5.vercel.app'
 ];
 
 // Merge and deduplicate origins
 const allAllowedOrigins = [...new Set([...allowedOrigins, ...requiredOrigins])];
 
-app.use(cors({
+// Configure CORS with proper options
+const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps, curl requests, or server-to-server)
     if (!origin) return callback(null, true);
     
     // Check if the origin is in the allowed list
-    if (allAllowedOrigins.includes(origin)) {
+    if (allAllowedOrigins.some(allowedOrigin => 
+      origin === allowedOrigin || 
+      origin.startsWith(allowedOrigin.replace('https://', 'http://'))
+    )) {
       return callback(null, true);
     }
     
@@ -53,16 +58,18 @@ app.use(cors({
     const msg = `The CORS policy for this site does not allow access from the specified origin: ${origin}`;
     return callback(new Error(msg), false);
   },
-
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   exposedHeaders: ['Content-Range', 'X-Total-Count', 'X-Total'],
   maxAge: 86400 // 24 hours
-}));
+};
+
+// Apply CORS middleware
+app.use(cors(corsOptions));
 
 // Handle preflight requests
-app.options('*', cors());
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
