@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { getAuthToken } from '../utils/auth';
 
-const API_URL = process.env.REACT_APP_API_URL;
+// Use the environment variable if it exists, otherwise use the production URL
+const API_URL = process.env.REACT_APP_API_URL || 'https://railway-planner-y1h5.vercel.app';
 
 // Create axios instance
 const api = axios.create({
