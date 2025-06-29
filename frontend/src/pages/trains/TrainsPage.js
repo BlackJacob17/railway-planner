@@ -115,7 +115,7 @@ const TrainsPage = () => {
     const fetchStations = async () => {
       try {
         setLoadingStations(true);
-        const response = await api.get('/stations');
+        const response = await api.get('/api/stations');
         console.log('Fetched stations:', response.data);
         
         // Use API stations if available, otherwise use sample data
@@ -295,7 +295,7 @@ const TrainsPage = () => {
       
       try {
         // Make the API call
-        const response = await api.post('/trains', trainData);
+        const response = await api.post('/api/trains', trainData);
         console.log('API Response:', response);
         
         // Handle success

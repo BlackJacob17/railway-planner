@@ -24,35 +24,35 @@ const ROLES = {
 // API endpoints
 const API_ENDPOINTS = {
   AUTH: {
-    LOGIN: '/api/v1/auth/login',
-    REGISTER: '/api/v1/auth/register',
-    LOGOUT: '/api/v1/auth/logout',
-    REFRESH_TOKEN: '/api/v1/auth/refresh-token',
-    FORGOT_PASSWORD: '/api/v1/auth/forgot-password',
-    RESET_PASSWORD: '/api/v1/auth/reset-password',
-    ME: '/api/v1/auth/me',
+    LOGIN: '/api/auth/login',
+    REGISTER: '/api/auth/register',
+    LOGOUT: '/api/auth/logout',
+    REFRESH_TOKEN: '/api/auth/refresh-token',
+    FORGOT_PASSWORD: '/api/auth/forgot-password',
+    RESET_PASSWORD: '/api/auth/reset-password',
+    ME: '/api/auth/me',
   },
   USERS: {
-    BASE: '/api/v1/users',
-    PROFILE: '/api/v1/users/profile',
-    CHANGE_PASSWORD: '/api/v1/users/change-password',
+    BASE: '/api/users',
+    PROFILE: '/api/users/profile',
+    CHANGE_PASSWORD: '/api/users/change-password',
   },
   TRAINS: {
-    BASE: '/api/v1/trains',
-    SEARCH: '/api/v1/trains/search',
-    AVAILABILITY: '/api/v1/trains/availability',
+    BASE: '/api/trains',
+    SEARCH: '/api/trains/search',
+    AVAILABILITY: '/api/trains/availability',
   },
   STATIONS: {
-    BASE: '/api/v1/stations',
+    BASE: '/api/stations',
   },
   BOOKINGS: {
-    BASE: '/api/v1/bookings',
-    MY_BOOKINGS: '/api/v1/bookings/my-bookings',
-    CANCEL: (id) => `/api/v1/bookings/${id}/cancel`,
+    BASE: '/api/bookings',
+    MY_BOOKINGS: '/api/bookings/my-bookings',
+    CANCEL: (id) => `/api/bookings/${id}/cancel`,
   },
   REVIEWS: {
-    BASE: '/api/v1/reviews',
-    TRAIN_REVIEWS: (trainId) => `/api/v1/reviews/train/${trainId}`,
+    BASE: '/api/reviews',
+    TRAIN_REVIEWS: (trainId) => `/api/reviews/train/${trainId}`,
   },
 };
 

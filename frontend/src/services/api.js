@@ -106,32 +106,32 @@ api.interceptors.response.use(
 
 // Auth API
 export const authAPI = {
-  register: (userData) => api.post('/auth/register', userData),
-  login: (credentials) => api.post('/auth/login', credentials),
-  getMe: () => api.get('/auth/me'),
-  refreshToken: () => api.post('/auth/refresh-token'),
-  logout: () => api.post('/auth/logout'),
+  register: (userData) => api.post('/api/auth/register', userData),
+  login: (credentials) => api.post('/api/auth/login', credentials),
+  getMe: () => api.get('/api/auth/me'),
+  refreshToken: () => api.post('/api/auth/refresh-token'),
+  logout: () => api.post('/api/auth/logout'),
 };
 
 // Stations API
 export const stationsAPI = {
-  getStations: (params) => api.get('/stations', { params }),
-  getStation: (id) => api.get(`/stations/${id}`),
-  getNearbyStations: (params) => api.get('/stations/nearby', { params }),
-  createStation: (data) => api.post('/stations', data),
-  updateStation: (id, data) => api.put(`/stations/${id}`, data),
-  deleteStation: (id) => api.delete(`/stations/${id}`),
+  getStations: (params) => api.get('/api/stations', { params }),
+  getStation: (id) => api.get(`/api/stations/${id}`),
+  getNearbyStations: (params) => api.get('/api/stations/nearby', { params }),
+  createStation: (data) => api.post('/api/stations', data),
+  updateStation: (id, data) => api.put(`/api/stations/${id}`, data),
+  deleteStation: (id) => api.delete(`/api/stations/${id}`),
 };
 
 // Trains API
 export const trainsAPI = {
-  getTrains: (params) => api.get('/trains', { params }),
-  getTrain: (id) => api.get(`/trains/${id}`),
-  searchTrains: (params) => api.get('/trains/search', { params }),
-  getAvailableSeats: (id, params) => api.get(`/trains/${id}/seats`, { params }),
-  createTrain: (data) => api.post('/trains', data),
-  updateTrain: (id, data) => api.put(`/trains/${id}`, data),
-  deleteTrain: (id) => api.delete(`/trains/${id}`),
+  getTrains: (params) => api.get('/api/trains', { params }),
+  getTrain: (id) => api.get(`/api/trains/${id}`),
+  searchTrains: (params) => api.get('/api/trains/search', { params }),
+  getAvailableSeats: (id, params) => api.get(`/api/trains/${id}/seats`, { params }),
+  createTrain: (data) => api.post('/api/trains', data),
+  updateTrain: (id, data) => api.put(`/api/trains/${id}`, data),
+  deleteTrain: (id) => api.delete(`/api/trains/${id}`),
 };
 
 // Bookings API
@@ -139,7 +139,7 @@ export const bookingsAPI = {
   // Get all bookings for the current user
   getBookings: async () => {
     try {
-      const response = await api.get('/bookings');
+      const response = await api.get('/api/bookings');
       console.log('Raw bookings response:', response);
       return response;
     } catch (error) {
@@ -148,30 +148,30 @@ export const bookingsAPI = {
     }
   },
   // Get a specific booking by ID
-  getBooking: (id) => api.get(`/bookings/${id}`),
+  getBooking: (id) => api.get(`/api/bookings/${id}`),
   // Get booking by PNR
-  getBookingByPNR: (pnr) => api.get(`/bookings/pnr/${pnr}`),
+  getBookingByPNR: (pnr) => api.get(`/api/bookings/pnr/${pnr}`),
   // Create a new booking
-  createBooking: (data) => api.post('/bookings', data),
+  createBooking: (data) => api.post('/api/bookings', data),
   // Cancel a booking
-  cancelBooking: (id) => api.put(`/bookings/${id}/cancel`),
+  cancelBooking: (id) => api.put(`/api/bookings/${id}/cancel`),
   // Admin only - Get all bookings
-  getAllBookings: (params) => api.get('/admin/bookings', { params }),
+  getAllBookings: (params) => api.get('/api/admin/bookings', { params }),
   // Get booking details with all related data
-  getBookingDetails: (id) => api.get(`/bookings/${id}/details`),
+  getBookingDetails: (id) => api.get(`/api/bookings/${id}/details`),
   // Download booking ticket
-  downloadTicket: (id) => api.get(`/bookings/${id}/ticket`, { responseType: 'blob' }),
+  downloadTicket: (id) => api.get(`/api/bookings/${id}/ticket`, { responseType: 'blob' }),
 };
 
 // Reviews API
 export const reviewsAPI = {
-  getTrainReviews: (trainId, params) => api.get(`/reviews/train/${trainId}`, { params }),
-  createReview: (data) => api.post('/reviews', data),
-  updateReview: (id, data) => api.put(`/reviews/${id}`, data),
-  deleteReview: (id) => api.delete(`/reviews/${id}`),
-  toggleLike: (id) => api.put(`/reviews/${id}/like`),
-  toggleDislike: (id) => api.put(`/reviews/${id}/dislike`),
-  searchReviews: (keyword, params) => api.get('/reviews/search', { params: { keyword, ...params } }),
+  getTrainReviews: (trainId, params) => api.get(`/api/reviews/train/${trainId}`, { params }),
+  createReview: (data) => api.post('/api/reviews', data),
+  updateReview: (id, data) => api.put(`/api/reviews/${id}`, data),
+  deleteReview: (id) => api.delete(`/api/reviews/${id}`),
+  toggleLike: (id) => api.put(`/api/reviews/${id}/like`),
+  toggleDislike: (id) => api.put(`/api/reviews/${id}/dislike`),
+  searchReviews: (keyword, params) => api.get('/api/reviews/search', { params: { keyword, ...params } }),
 };
 
 export default api;
