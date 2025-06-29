@@ -30,24 +30,39 @@ if (process.env.NODE_ENV !== 'production') {
 // Add any additional required origins
 const requiredOrigins = [
   'https://railway-planner-frontend1.vercel.app',
+  'https://railway-planner-frontend1.vercel.app/',
   'https://railway-planner-frontend.vercel.app',
-  'https://railway-planner-y1h5.vercel.app'
+  'https://railway-planner-frontend.vercel.app/',
+  'https://railway-planner-y1h5.vercel.app',
+  'https://railway-planner-y1h5.vercel.app/'
 ];
 
 // Merge and deduplicate origins
 const allAllowedOrigins = [...new Set([...allowedOrigins, ...requiredOrigins])];
 
+console.log('Allowed CORS origins:', allAllowedOrigins);
+
 // Configure CORS with proper options
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps, curl requests, or server-to-server)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('No origin header, allowing request');
+      return callback(null, true);
+    }
+    
+    console.log('Received request from origin:', origin);
     
     // Check if the origin is in the allowed list
-    if (allAllowedOrigins.some(allowedOrigin => 
-      origin === allowedOrigin || 
-      origin.startsWith(allowedOrigin.replace('https://', 'http://'))
-    )) {
+    if (allAllowedOrigins.some(allowedOrigin => {
+      const isAllowed = origin === allowedOrigin || 
+                     origin === allowedOrigin.replace(/\/$/, '') ||
+                     origin === (allowedOrigin + '/');
+      if (isAllowed) {
+        console.log('Origin allowed:', origin);
+      }
+      return isAllowed;
+    })) {
       return callback(null, true);
     }
     
@@ -55,7 +70,9 @@ const corsOptions = {
     console.log('CORS blocked origin:', origin);
     console.log('Allowed origins:', allAllowedOrigins);
     
-    const msg = `The CORS policy for this site does not allow access from the specified origin: ${origin}`;
+    const msg = `The CORS policy for this site does not allow access from the specified origin: ${origin}. \n` +
+                `Allowed origins: ${JSON.stringify(allAllowedOrigins, null, 2)}`;
+    console.error(msg);
     return callback(new Error(msg), false);
   },
   credentials: true,
