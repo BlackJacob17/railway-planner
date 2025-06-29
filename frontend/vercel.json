@@ -16,21 +16,31 @@
       "dest": "/static/$1"
     },
     {
-      "src": "^/favicon.ico",
+      "src": "/favicon.ico",
       "dest": "/favicon.ico"
     },
     {
-      "src": "^/manifest.json",
+      "src": "/manifest.json",
       "dest": "/manifest.json"
+    },
+    {
+      "src": "^/api/?(.*)",
+      "dest": "https://railway-planner-y1h5.vercel.app/api/$1"
     },
     {
       "src": "^/(.*)",
       "dest": "/index.html"
     }
   ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "build": {
     "env": {
-      "REACT_APP_API_URL": "https://your-backend-url.vercel.app"
+      "REACT_APP_API_URL": "https://railway-planner-y1h5.vercel.app"
     }
   },
   "installCommand": "npm install"

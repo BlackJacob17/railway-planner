@@ -1,11 +1,12 @@
 import axios from 'axios';
 import { handleApiError, withErrorHandling } from '../../utils/apiErrorHandler';
 
-const API_URL = process.env.REACT_APP_API_URL;
+// Use the environment variable if it exists, otherwise use the production URL
+const API_URL = process.env.REACT_APP_API_URL || 'https://railway-planner-y1h5.vercel.app';
 
-// Create axios instance with base URL// API client with interceptors
+// Create axios instance with base URL
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL,
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
