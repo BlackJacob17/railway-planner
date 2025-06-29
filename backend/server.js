@@ -17,27 +17,41 @@ const path = require('path');
 // In Vercel serverless functions, __dirname is already defined
 // No need to redefine it
 // Middleware
-const allowedOrigins = [
-  'http://localhost:3000',
-  'https://railway-planner-ten.vercel.app',
-  'https://frontend-nfkhwvl6d-prabhavs-projects-5a6014e5.vercel.app',
-  'https://railway-planner-frontend.vercel.app',
-  'https://railway-planner-1.onrender.com',
-  'https://railway-planner.onrender.com',
-  'https://railway-planner-backend.onrender.com'
+// Parse CORS_ORIGIN from environment variable
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+  : [];
+
+// Add development origins if in development
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.push('http://localhost:3000');
+}
+
+// Add any additional required origins
+const requiredOrigins = [
+  'https://railway-planner-frontend1.vercel.app',
+  'https://railway-planner-frontend.vercel.app'
 ];
+
+// Merge and deduplicate origins
+const allAllowedOrigins = [...new Set([...allowedOrigins, ...requiredOrigins])];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin (like mobile apps, curl requests, or server-to-server)
     if (!origin) return callback(null, true);
     
     // Check if the origin is in the allowed list
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = `The CORS policy for this site does not allow access from the specified origin: ${origin}`;
-      return callback(new Error(msg), false);
+    if (allAllowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
-    return callback(null, true);
+    
+    // For debugging CORS issues
+    console.log('CORS blocked origin:', origin);
+    console.log('Allowed origins:', allAllowedOrigins);
+    
+    const msg = `The CORS policy for this site does not allow access from the specified origin: ${origin}`;
+    return callback(new Error(msg), false);
   },
 
   credentials: true,
