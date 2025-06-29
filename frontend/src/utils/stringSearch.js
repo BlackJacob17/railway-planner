@@ -3,16 +3,16 @@
  * 
  * @param {string} text - The text to search in
  * @param {string} pattern - The pattern to search for
- * @returns {boolean} - True if pattern is found in text, false otherwise
+ * @returns {number[]} - Array of starting indices where pattern is found
  */
-export const kmpSearch = (text, pattern) => {
-  if (!text || !pattern) return false;
+const kmpSearchIndices = (text, pattern) => {
+  if (!text || !pattern) return [];
   
-  const textStr = String(text).toLowerCase();
-  const patternStr = String(pattern).toLowerCase().trim();
+  const textStr = String(text);
+  const patternStr = String(pattern).trim();
+  const result = [];
   
-  if (patternStr.length === 0) return true;
-  if (textStr.length < patternStr.length) return false;
+  if (patternStr.length === 0 || textStr.length < patternStr.length) return result;
   
   // Build the longest prefix suffix (lps) array
   const lps = computeLPSArray(patternStr);
@@ -21,12 +21,14 @@ export const kmpSearch = (text, pattern) => {
   let j = 0;  // index for pattern
   
   while (i < textStr.length) {
-    if (patternStr[j] === textStr[i]) {
+    if (patternStr[j].toLowerCase() === textStr[i].toLowerCase()) {
       i++;
       j++;
       
       if (j === patternStr.length) {
-        return true; // Pattern found
+        // Pattern found at index i-j
+        result.push(i - j);
+        j = lps[j - 1];
       }
     } else if (j > 0) {
       j = lps[j - 1];
@@ -35,7 +37,64 @@ export const kmpSearch = (text, pattern) => {
     }
   }
   
-  return false; // Pattern not found
+  return result;
+};
+
+/**
+ * Check if pattern exists in text using KMP
+ * @param {string} text - The text to search in
+ * @param {string} pattern - The pattern to search for
+ * @returns {boolean} - True if pattern is found in text
+ */
+export const kmpSearch = (text, pattern) => {
+  return kmpSearchIndices(text, pattern).length > 0;
+};
+
+/**
+ * Highlight all occurrences of pattern in text
+ * @param {string} text - The text to highlight in
+ * @param {string} pattern - The pattern to highlight
+ * @returns {React.ReactNode} - Text with highlighted matches
+ */
+export const highlightPattern = (text, pattern) => {
+  if (!text || !pattern) return text;
+  
+  const textStr = String(text);
+  const patternStr = String(pattern).trim();
+  
+  if (patternStr.length === 0 || textStr.length < patternStr.length) {
+    return textStr;
+  }
+  
+  const indices = kmpSearchIndices(textStr, patternStr);
+  
+  if (indices.length === 0) return textStr;
+  
+  const result = [];
+  let lastIndex = 0;
+  
+  indices.forEach((startIndex, i) => {
+    // Add text before the match
+    if (startIndex > lastIndex) {
+      result.push(textStr.substring(lastIndex, startIndex));
+    }
+    
+    // Add the highlighted match
+    result.push(
+      <mark key={i} style={{ backgroundColor: '#ffeb3b', padding: '0 2px', borderRadius: '3px' }}>
+        {textStr.substring(startIndex, startIndex + patternStr.length)}
+      </mark>
+    );
+    
+    lastIndex = startIndex + patternStr.length;
+  });
+  
+  // Add remaining text after last match
+  if (lastIndex < textStr.length) {
+    result.push(textStr.substring(lastIndex));
+  }
+  
+  return result.length > 0 ? result : textStr;
 };
 
 /**
@@ -49,7 +108,7 @@ const computeLPSArray = (pattern) => {
   let i = 1;
   
   while (i < pattern.length) {
-    if (pattern[i] === pattern[len]) {
+    if (pattern[i].toLowerCase() === pattern[len].toLowerCase()) {
       len++;
       lps[i] = len;
       i++;
@@ -71,14 +130,33 @@ const computeLPSArray = (pattern) => {
  * @param {Object} item - The item to search in
  * @param {string[]} fields - Array of field names to search in
  * @param {string} pattern - The pattern to search for
- * @returns {boolean} - True if pattern is found in any of the specified fields
+ * @param {boolean} highlight - Whether to return highlighted matches
+ * @returns {Object} - Object with match status and highlighted fields if requested
  */
-export const searchInObject = (item, fields, pattern) => {
-  if (!pattern || pattern.trim() === '') return true;
+export const searchInObject = (item, fields, pattern, highlight = false) => {
+  if (!pattern || pattern.trim() === '') {
+    return { match: true };
+  }
   
-  return fields.some(field => {
+  const result = {
+    match: false,
+    highlighted: {}
+  };
+  
+  fields.forEach(field => {
     const value = item[field];
-    if (value === undefined || value === null) return false;
-    return kmpSearch(String(value), pattern);
+    if (value === undefined || value === null) return;
+    
+    const strValue = String(value);
+    if (kmpSearch(strValue, pattern)) {
+      result.match = true;
+      if (highlight) {
+        result.highlighted[field] = highlightPattern(strValue, pattern);
+      }
+    } else if (highlight) {
+      result.highlighted[field] = strValue;
+    }
   });
+  
+  return result;
 };

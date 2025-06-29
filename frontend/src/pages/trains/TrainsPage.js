@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useSnackbar } from 'notistack';
 import { useNavigate } from 'react-router-dom';
-import { searchInObject } from '../../utils/stringSearch';
+import { highlightPattern, containsPattern } from '../../utils/searchUtils';
+import priceUtils from '../../utils/priceBST';
+const { createPriceBST } = priceUtils;
+import PriceRangeFilter from '../../components/PriceRangeFilter';
 import api from '../../services/api';
 import {
   Box,
@@ -10,6 +13,7 @@ import {
   Card,
   CardContent,
   Checkbox,
+  Chip,
   Container,
   Dialog,
   DialogActions,
@@ -40,7 +44,7 @@ import {
   Alert,
   useTheme,
   Divider,
-  Chip
+  Stack
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -57,11 +61,11 @@ import {
   updateTrain 
 } from '../../store/slices/trainSlice';
 
-
 const TrainsPage = () => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
   
   // Selectors
   const { trains = [], loading, error } = useSelector((state) => ({
@@ -71,8 +75,10 @@ const TrainsPage = () => {
   }));
   const { user } = useSelector((state) => state.auth);
   const isAdmin = user?.role === 'admin';
+  
+  // State
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
   const [searchTerm, setSearchTerm] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedTrain, setSelectedTrain] = useState(null);
@@ -82,6 +88,9 @@ const TrainsPage = () => {
     severity: 'success'
   });
   const [submitting, setSubmitting] = useState(false);
+  const [priceRange, setPriceRange] = useState({ min: null, max: null });
+  const [priceBST, setPriceBST] = useState(null);
+  const [stations, setStations] = useState([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -94,118 +103,94 @@ const TrainsPage = () => {
     arrivalTime: '',
     totalSeats: 0,
     fare: 0,
-    daysOfOperation: []
+    daysOfOperation: [],
+    route: []
   });
-  
-  const [stations, setStations] = useState([]);
-  const [loadingStations, setLoadingStations] = useState(true);
 
-  // Sample stations with valid MongoDB ObjectId format (24-character hex string)
-  const sampleStations = [
-    { _id: '60d5ecb858787c1b9c8d9a4a', name: 'Mumbai Central', code: 'MMCT' },
-    { _id: '60d5ecc258787c1b9c8d9a4b', name: 'Delhi', code: 'NDLS' },
-    { _id: '60d5eccb58787c1b9c8d9a4c', name: 'Chennai Central', code: 'MAS' },
-    { _id: '60d5ecd458787c1b9c8d9a4d', name: 'Howrah', code: 'HWH' },
-    { _id: '60d5ecdd58787c1b9c8d9a4e', name: 'Bengaluru City', code: 'SBC' },
-    { _id: '60d5ece658787c1b9c8d9a4f', name: 'Ahmedabad', code: 'ADI' },
-  ];
-
-  // Fetch stations on component mount
-  useEffect(() => {
-    const fetchStations = async () => {
-      try {
-        setLoadingStations(true);
-        const response = await api.get('/api/stations');
-        console.log('Fetched stations:', response.data);
-        
-        // Use API stations if available, otherwise use sample data
-        const validStations = response.data?.length > 0 ? response.data : sampleStations;
-        
-        console.log('Setting stations:', validStations);
-        setStations(validStations);
-      } catch (error) {
-        console.error('Error fetching stations:', error);
-        console.log('Using sample stations:', sampleStations);
-        setStations(sampleStations);
-      } finally {
-        setLoadingStations(false);
-      }
-    };
-
-    fetchStations();
-  }, []);
-
-  // Fetch trains on component mount
+  // Fetch trains and stations on component mount
   useEffect(() => {
     dispatch(fetchTrains());
+    // Fetch stations if needed
+    // dispatch(fetchStations());
   }, [dispatch]);
 
-  // Update form data when selectedTrain changes
-  useEffect(() => {
-    if (selectedTrain) {
-      setFormData({
-        name: selectedTrain.name || '',
-        trainNumber: selectedTrain.trainNumber || '',
-        trainType: selectedTrain.trainType || 'Express',
-        source: selectedTrain.source || '',
-        destination: selectedTrain.destination || '',
-        departureTime: selectedTrain.departureTime || '',
-        arrivalTime: selectedTrain.arrivalTime || '',
-        totalSeats: selectedTrain.totalSeats || 0,
-        fare: selectedTrain.fare || 0,
-        daysOfOperation: selectedTrain.daysOfOperation || []
-      });
-    } else {
-      setFormData({
-        name: '',
-        trainNumber: '',
-        trainType: 'Express',
-        source: '',
-        destination: '',
-        departureTime: '',
-        arrivalTime: '',
-        totalSeats: 0,
-        fare: 0,
-        daysOfOperation: []
-      });
-    }
-  }, [selectedTrain]);
 
-  // Handle dialog open/close
-  const handleOpenDialog = (train = null) => {
-    setSelectedTrain(train);
-    if (train) {
-      setFormData({
-        name: train.name || '',
-        trainNumber: train.trainNumber || '',
-        trainType: train.trainType || 'Express',
-        source: train.source || '',
-        destination: train.destination || '',
-        departureTime: train.departureTime || '',
-        arrivalTime: train.arrivalTime || '',
-        totalSeats: train.totalSeats || 0,
-        fare: train.fare || 0,
-        daysOfOperation: train.daysOfOperation || []
-      });
-    } else {
-      setFormData({
-        name: '',
-        trainNumber: '',
-        trainType: 'Express',
-        source: '',
-        destination: '',
-        departureTime: '',
-        arrivalTime: '',
-        totalSeats: 0,
-        fare: 0,
-        daysOfOperation: []
+  // Initialize BST when trains data changes
+  useEffect(() => {
+    if (trains.length > 0) {
+      const bst = createPriceBST(trains);
+      setPriceBST(bst);
+      
+      // Set initial price range
+      const minPrice = bst.getMinPrice();
+      const maxPrice = bst.getMaxPrice();
+      setPriceRange({ min: minPrice, max: maxPrice });
+    }
+  }, [trains]);
+
+  // Filter trains based on search term using KMP algorithm and price range
+  const filteredTrains = useMemo(() => {
+    if (!Array.isArray(trains)) return [];
+    
+    let result = [...trains];
+    
+    // Apply search term filter if exists
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      result = result.filter(train => {
+        // Check direct train properties
+        if (containsPattern(train.name, searchLower) || 
+            containsPattern(train.trainNumber, searchLower) ||
+            containsPattern(train.trainType, searchLower)) {
+          return true;
+        }
+        
+        // Check station names if stations are loaded
+        if (stations.length > 0) {
+          const sourceStation = stations.find(s => s._id === train.source);
+          const destStation = stations.find(s => s._id === train.destination);
+          
+          if ((sourceStation && (containsPattern(sourceStation.name, searchLower) || 
+                                containsPattern(sourceStation.code, searchLower))) ||
+              (destStation && (containsPattern(destStation.name, searchLower) || 
+                             containsPattern(destStation.code, searchLower)))) {
+            return true;
+          }
+        }
+        
+        return false;
       });
     }
-    setOpenDialog(true);
+    
+    // Apply price range filter
+    if (priceRange.min !== null && priceRange.max !== null) {
+      result = result.filter(train => 
+        train.fare >= priceRange.min && train.fare <= priceRange.max
+      );
+    }
+    
+    return result;
+  }, [trains, searchTerm, stations, priceRange]);
+
+  // Pagination
+  const paginatedTrains = filteredTrains.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Handle page change
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
   };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
+  // Handle rows per page change
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Handle opening the add train dialog
+  const handleOpenDialog = () => {
     setSelectedTrain(null);
     setFormData({
       name: '',
@@ -217,24 +202,37 @@ const TrainsPage = () => {
       arrivalTime: '',
       totalSeats: 0,
       fare: 0,
-      daysOfOperation: []
+      daysOfOperation: [],
+      route: []
     });
+    setOpenDialog(true);
+  };
+
+  // Handle editing a train
+  const handleEditTrain = (train) => {
+    setSelectedTrain(train);
+    setFormData({
+      name: train.name,
+      trainNumber: train.trainNumber,
+      trainType: train.trainType,
+      source: train.source,
+      destination: train.destination,
+      departureTime: train.departureTime,
+      arrivalTime: train.arrivalTime,
+      totalSeats: train.totalSeats,
+      fare: train.fare,
+      daysOfOperation: train.daysOfOperation || [],
+      route: train.route || []
+    });
+    setOpenDialog(true);
   };
 
   // Handle form input changes
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    
-    // Handle different input types
-    const newValue = type === 'checkbox' 
-      ? checked 
-      : type === 'number' 
-        ? parseFloat(value) || 0 
-        : value;
-
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: newValue
+      [name]: value
     }));
   };
 
@@ -244,176 +242,83 @@ const TrainsPage = () => {
     setSubmitting(true);
     
     try {
-      console.log('Form data:', formData);
-      console.log('Available stations:', stations);
-      
-      // Basic validation
-      if (!formData.name || !formData.trainNumber || !formData.source || !formData.destination || 
-          !formData.departureTime || !formData.arrivalTime) {
-        const missingFields = [];
-        if (!formData.name) missingFields.push('name');
-        if (!formData.trainNumber) missingFields.push('trainNumber');
-        if (!formData.source) missingFields.push('source');
-        if (!formData.destination) missingFields.push('destination');
-        if (!formData.departureTime) missingFields.push('departureTime');
-        if (!formData.arrivalTime) missingFields.push('arrivalTime');
-        
-        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      if (selectedTrain) {
+        // Update existing train
+        await dispatch(updateTrain({ id: selectedTrain._id, data: formData })).unwrap();
+        setSnackbar({
+          open: true,
+          message: 'Train updated successfully',
+          severity: 'success'
+        });
+      } else {
+        // Create new train
+        await dispatch(createTrain(formData)).unwrap();
+        setSnackbar({
+          open: true,
+          message: 'Train created successfully',
+          severity: 'success'
+        });
       }
-
-      // Get the selected stations
-      const sourceStation = stations.find(s => s._id === formData.source);
-      const destinationStation = stations.find(s => s._id === formData.destination);
-
-      console.log('Selected source station:', sourceStation);
-      console.log('Selected destination station:', destinationStation);
-
-      if (!sourceStation) {
-        throw new Error(`Source station not found. Selected ID: ${formData.source}`);
-      }
-      
-      if (!destinationStation) {
-        throw new Error(`Destination station not found. Selected ID: ${formData.destination}`);
-      }
-
-      const trainData = {
-        name: formData.name,
-        trainNumber: formData.trainNumber,
-        source: sourceStation._id,
-        destination: destinationStation._id,
-        departureTime: new Date(formData.departureTime).toISOString(),
-        arrivalTime: new Date(formData.arrivalTime).toISOString(),
-        totalSeats: parseInt(formData.totalSeats, 10) || 100,
-        availableSeats: parseInt(formData.availableSeats, 10) || (parseInt(formData.totalSeats, 10) || 100),
-        fare: parseFloat(formData.fare) || 0,
-        trainType: formData.trainType || 'Express',
-        daysOfOperation: formData.daysOfOperation || [],
-        route: formData.route || []
-      };
-
-      console.log('Prepared train data for submission:', JSON.stringify(trainData, null, 2));
-      
-      try {
-        // Make the API call
-        const response = await api.post('/api/trains', trainData);
-        console.log('API Response:', response);
-        
-        // Handle success
-        enqueueSnackbar('Train created successfully', { variant: 'success' });
-        
-        // Refresh the trains list
-        dispatch(fetchTrains());
-        
-        // Close the dialog
-        handleCloseDialog();
-      } catch (apiError) {
-        console.error('API Error:', apiError);
-        console.error('API Error Response:', apiError.response?.data);
-        throw new Error(apiError.response?.data?.message || 'Failed to create train. Please try again.');
-      }
-      
+      setOpenDialog(false);
     } catch (error) {
-      console.error('Error creating train:', error);
-      
-      // Extract detailed error information
-      let errorMessage = 'Failed to create train';
-      let errorDetails = [];
-      
-      if (error.response?.data) {
-        console.log('Full error response:', error.response.data);
-        
-        // Handle validation errors
-        if (error.response.data.errors && Array.isArray(error.response.data.errors)) {
-          errorDetails = error.response.data.errors.map(e => `${e.param || 'field'} ${e.msg || 'is invalid'}`);
-          errorMessage = 'Validation errors:\n' + errorDetails.join('\n');
-        } 
-        // Handle custom error message
-        else if (error.response.data.message) {
-          errorMessage = error.response.data.message;
-        }
-      } 
-      // Handle network or other errors
-      else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      console.error('Error details:', errorDetails);
-      
-      // Show detailed error in snackbar
-      enqueueSnackbar(errorMessage, { 
-        variant: 'error',
-        autoHideDuration: 10000, // Show for 10 seconds
-        style: { whiteSpace: 'pre-line' } // Allow line breaks
-      });
-      
-      // Log the full error for debugging
-      console.error('Full error object:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        request: error.request,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          data: error.config?.data
-        }
+      setSnackbar({
+        open: true,
+        message: error.message || 'An error occurred',
+        severity: 'error'
       });
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Handle delete train
-  const handleDeleteTrain = async (id) => {
+  // Handle delete confirmation
+  const handleDeleteClick = (trainId) => {
     if (window.confirm('Are you sure you want to delete this train?')) {
-      try {
-        await dispatch(deleteTrain(id)).unwrap();
-        enqueueSnackbar('Train deleted successfully', { variant: 'success' });
-        // Refresh trains list
-        dispatch(fetchTrains());
-      } catch (error) {
-        enqueueSnackbar(error.message || 'Failed to delete train', { variant: 'error' });
-      }
+      handleDeleteTrain(trainId);
     }
   };
 
-  // Handle pagination
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
+  // Handle train deletion
+  const handleDeleteTrain = async (trainId) => {
+    try {
+      await dispatch(deleteTrain(trainId)).unwrap();
+      setSnackbar({
+        open: true,
+        message: 'Train deleted successfully',
+        severity: 'success'
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error.message || 'Failed to delete train',
+        severity: 'error'
+      });
+    }
   };
-
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  // Filter trains based on search term using KMP algorithm
-  const filteredTrains = useMemo(() => {
-    if (!Array.isArray(trains)) return [];
-    if (!searchTerm.trim()) return [...trains];
-    
-    // Search in multiple fields for better matching
-    return trains.filter(train => 
-      searchInObject(train, ['name', 'trainNumber', 'source.name', 'destination.name'], searchTerm)
-    );
-  }, [trains, searchTerm]);
-
-  // Pagination
-  const paginatedTrains = filteredTrains.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
 
   return (
     <Container maxWidth="xl">
       <Box sx={{ my: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <TrainIcon color="primary" sx={{ fontSize: 40, mr: 1 }} />
-            <Typography variant="h4" component="h1">
-              Trains Management
-            </Typography>
-          </Box>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <TrainIcon color="primary" sx={{ fontSize: 40, mr: 1 }} />
+              <Typography variant="h4" component="h1">
+                Trains Management
+              </Typography>
+            </Box>
+            <Chip 
+              label="Search via KMP Algo" 
+              color="primary" 
+              variant="outlined"
+              size="small"
+              sx={{ 
+                height: '24px',
+                fontSize: '0.75rem',
+                fontWeight: 500 
+              }}
+            />
+          </Stack>
           {isAdmin && (
             <Button
               variant="contained"
@@ -426,64 +331,81 @@ const TrainsPage = () => {
           )}
         </Box>
 
-        <Card elevation={3} sx={{ mb: 4 }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-              <TextField
-                variant="outlined"
-                size="small"
-                placeholder="Search trains..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
-                  endAdornment: searchTerm && (
-                    <IconButton size="small" onClick={() => setSearchTerm('')}>
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
-                  ),
-                }}
-                sx={{ width: 300 }}
-              />
-            </Box>
+        <Grid container spacing={3}>
+          {/* Main Content */}
+          <Grid item xs={12} md={9}>
+            <Card elevation={3} sx={{ mb: 4 }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Search trains..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    InputProps={{
+                      startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
+                      endAdornment: searchTerm && (
+                        <IconButton size="small" onClick={() => setSearchTerm('')}>
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      ),
+                    }}
+                    sx={{ width: 300 }}
+                  />
+                </Box>
 
-            {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                <CircularProgress />
-              </Box>
-            ) : error ? (
-              <Alert severity="error">{error}</Alert>
-            ) : (
-              <>
-                <TableContainer component={Paper}>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Train Number</TableCell>
-                        <TableCell>Name</TableCell>
-                        <TableCell>Type</TableCell>
-                        <TableCell>Source</TableCell>
-                        <TableCell>Destination</TableCell>
-                        <TableCell>Departure</TableCell>
-                        <TableCell>Arrival</TableCell>
-                        <TableCell>Seats</TableCell>
-                        <TableCell>Fare (INR)</TableCell>
-                        <TableCell>Days</TableCell>
-                        <TableCell align="right">Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {paginatedTrains.length > 0 ? (
-                        paginatedTrains.map((train) => (
+                {loading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                    <CircularProgress />
+                  </Box>
+                ) : error ? (
+                  <Alert severity="error">{error}</Alert>
+                ) : (
+                  <TableContainer component={Paper}>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Train Number</TableCell>
+                          <TableCell>Name</TableCell>
+                          <TableCell>Type</TableCell>
+                          <TableCell>Source</TableCell>
+                          <TableCell>Destination</TableCell>
+                          <TableCell>Departure</TableCell>
+                          <TableCell>Arrival</TableCell>
+                          <TableCell>Seats</TableCell>
+                          <TableCell>Fare (INR)</TableCell>
+                          <TableCell>Days</TableCell>
+                          <TableCell align="right">Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {paginatedTrains.map((train) => (
                           <TableRow key={train._id} hover>
-                            <TableCell>{train.trainNumber}</TableCell>
-                            <TableCell>{train.name}</TableCell>
-                            <TableCell>{train.trainType}</TableCell>
                             <TableCell>
-                              {stations.find((s) => s._id === train.source)?.name || 'N/A'}
+                              {searchTerm ? highlightPattern(train.trainNumber, searchTerm) : train.trainNumber}
                             </TableCell>
                             <TableCell>
-                              {stations.find((s) => s._id === train.destination)?.name || 'N/A'}
+                              {searchTerm ? highlightPattern(train.name, searchTerm) : train.name}
+                            </TableCell>
+                            <TableCell>
+                              {searchTerm ? highlightPattern(train.trainType, searchTerm) : train.trainType}
+                            </TableCell>
+                            <TableCell>
+                              {(() => {
+                                const station = stations.find(s => s._id === train.source);
+                                return station 
+                                  ? (searchTerm ? highlightPattern(station.name, searchTerm) : station.name)
+                                  : 'N/A';
+                              })()}
+                            </TableCell>
+                            <TableCell>
+                              {(() => {
+                                const station = stations.find(s => s._id === train.destination);
+                                return station 
+                                  ? (searchTerm ? highlightPattern(station.name, searchTerm) : station.name)
+                                  : 'N/A';
+                              })()}
                             </TableCell>
                             <TableCell>
                               {new Date(train.departureTime).toLocaleString()}
@@ -492,292 +414,225 @@ const TrainsPage = () => {
                               {new Date(train.arrivalTime).toLocaleString()}
                             </TableCell>
                             <TableCell>{train.totalSeats}</TableCell>
-                            <TableCell>₹{train.fare}</TableCell>
+                            <TableCell>₹{train.fare?.toLocaleString()}</TableCell>
                             <TableCell>
-                              {Array.isArray(train.daysOfOperation)
-                                ? train.daysOfOperation.join(', ')
-                                : 'N/A'}
+                              {train.daysOfOperation?.join(', ') || 'Daily'}
                             </TableCell>
                             <TableCell align="right">
-                              <Tooltip title="Edit">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleOpenDialog(train)}
-                                  color="primary"
-                                >
-                                  <EditIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Delete">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleDeleteTrain(train._id)}
-                                  color="error"
-                                >
-                                  <DeleteIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
+                              {isAdmin && (
+                                <>
+                                  <IconButton onClick={() => handleEditTrain(train)} size="small">
+                                    <EditIcon fontSize="small" />
+                                  </IconButton>
+                                  <IconButton 
+                                    onClick={() => handleDeleteClick(train._id)} 
+                                    size="small"
+                                    color="error"
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                </>
+                              )}
                             </TableCell>
                           </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
-                            <Typography color="textSecondary">
-                              {searchTerm ? 'No matching trains found' : 'No trains available'}
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                <TablePagination
-                  rowsPerPageOptions={[5, 10, 25]}
-                  component="div"
-                  count={filteredTrains.length}
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  onPageChange={handleChangePage}
-                  onRowsPerPageChange={handleChangeRowsPerPage}
-                />
-              </>
-            )}
-          </CardContent>
-        </Card>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    <TablePagination
+                      rowsPerPageOptions={[10, 25, 50, 100]}
+                      component="div"
+                      count={filteredTrains.length}
+                      rowsPerPage={rowsPerPage}
+                      page={page}
+                      onPageChange={handleChangePage}
+                      onRowsPerPageChange={handleChangeRowsPerPage}
+                    />
+                  </TableContainer>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Price Range Filter */}
+          <Grid item xs={12} md={3}>
+            <PriceRangeFilter 
+              tickets={trains}
+              onPriceRangeChange={setPriceRange}
+              initialMin={priceRange.min}
+              initialMax={priceRange.max}
+            />
+          </Grid>
+        </Grid>
 
         {/* Add/Edit Train Dialog */}
-        <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+        <Dialog 
+          open={openDialog} 
+          onClose={() => setOpenDialog(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>
+            {selectedTrain ? 'Edit Train' : 'Add New Train'}
+          </DialogTitle>
           <form onSubmit={handleSubmit}>
-            <DialogTitle>
-              {selectedTrain ? `Edit Train ${selectedTrain.trainNumber}` : 'Add New Train'}
-            </DialogTitle>
             <DialogContent>
-              <Box sx={{ mt: 2 }}>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      id="trainNumber"
-                      label="Train Number"
-                      name="trainNumber"
-                      value={formData.trainNumber}
-                      onChange={handleInputChange}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      id="name"
-                      label="Train Name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <FormControl fullWidth margin="normal" required>
-                      <InputLabel id="train-type-label">Train Type</InputLabel>
-                      <Select
-                        labelId="train-type-label"
-                        id="trainType"
-                        name="trainType"
-                        value={formData.trainType}
-                        label="Train Type"
-                        onChange={handleInputChange}
-                      >
-                        <MenuItem value="Rajdhani">Rajdhani</MenuItem>
-                        <MenuItem value="Shatabdi">Shatabdi</MenuItem>
-                        <MenuItem value="Duronto">Duronto</MenuItem>
-                        <MenuItem value="Express">Express</MenuItem>
-                        <MenuItem value="Passenger">Passenger</MenuItem>
-                        <MenuItem value="Other">Other</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <FormControl fullWidth margin="normal" required>
-                      <InputLabel id="source-label">Source Station</InputLabel>
-                      <Select
-                        labelId="source-label"
-                        id="source"
-                        name="source"
-                        value={formData.source}
-                        onChange={handleInputChange}
-                        renderValue={(selected) => {
-                          if (!selected) {
-                            return <em>Select source station</em>;
-                          }
-                          const station = stations.find(s => s._id === selected);
-                          return station ? `${station.name} (${station.code})` : '';
-                        }}
-                        MenuProps={{
-                          PaperProps: {
-                            style: {
-                              maxHeight: 300,
-                            },
-                          },
-                        }}
-                      >
-                        <MenuItem disabled value="">
-                          <em>Select source station</em>
-                        </MenuItem>
-                        {stations.map((station) => (
-                          <MenuItem key={station._id} value={station._id}>
-                            {station.name} ({station.code || station._id})
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <FormControl fullWidth margin="normal" required>
-                      <InputLabel id="destination-label">Destination Station</InputLabel>
-                      <Select
-                        labelId="destination-label"
-                        id="destination"
-                        name="destination"
-                        value={formData.destination}
-                        onChange={handleInputChange}
-                        renderValue={(selected) => {
-                          if (!selected) {
-                            return <em>Select destination station</em>;
-                          }
-                          const station = stations.find(s => s._id === selected);
-                          return station ? `${station.name} (${station.code})` : '';
-                        }}
-                        MenuProps={{
-                          PaperProps: {
-                            style: {
-                              maxHeight: 300,
-                            },
-                          },
-                        }}
-                      >
-                        <MenuItem disabled value="">
-                          <em>Select destination station</em>
-                        </MenuItem>
-                        {stations.map((station) => (
-                          <MenuItem key={station._id} value={station._id}>
-                            {station.name} ({station.code || station._id})
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      name="departureTime"
-                      label="Departure Time"
-                      type="datetime-local"
-                      id="departureTime"
-                      value={formData.departureTime}
-                      onChange={handleInputChange}
-                      InputLabelProps={{
-                        shrink: true,
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      margin="normal"
-                      required
-                      fullWidth
-                      name="arrivalTime"
-                      label="Arrival Time"
-                      type="datetime-local"
-                      id="arrivalTime"
-                      value={formData.arrivalTime}
-                      onChange={handleInputChange}
-                      InputLabelProps={{
-                        shrink: true,
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      required
-                      fullWidth
-                      name="totalSeats"
-                      label="Total Seats"
-                      type="number"
-                      id="totalSeats"
-                      value={formData.totalSeats}
-                      onChange={handleInputChange}
-                      inputProps={{ min: 1 }}
-                      margin="normal"
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      required
-                      fullWidth
-                      name="fare"
-                      label="Fare (INR)"
-                      type="number"
-                      id="fare"
-                      value={formData.fare}
-                      onChange={handleInputChange}
-                      inputProps={{ min: 0, step: 1 }}
-                      margin="normal"
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <FormControl component="fieldset" sx={{ mt: 2, width: '100%' }}>
-                      <FormLabel component="legend">Days of Operation</FormLabel>
-                      <FormGroup row>
-                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                          <FormControlLabel
-                            key={day}
-                            control={
-                              <Checkbox
-                                checked={formData.daysOfOperation.includes(day)}
-                                onChange={(e) => {
-                                  const newDays = e.target.checked
-                                    ? [...formData.daysOfOperation, day]
-                                    : formData.daysOfOperation.filter((d) => d !== day);
-                                  setFormData({ ...formData, daysOfOperation: newDays });
-                                }}
-                                name={day}
-                              />
-                            }
-                            label={day}
-                          />
-                        ))}
-                      </FormGroup>
-                    </FormControl>
-                  </Grid>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Train Name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    margin="normal"
+                    required
+                  />
                 </Grid>
-              </Box>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Train Number"
+                    name="trainNumber"
+                    value={formData.trainNumber}
+                    onChange={handleInputChange}
+                    margin="normal"
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth margin="normal">
+                    <InputLabel>Train Type</InputLabel>
+                    <Select
+                      name="trainType"
+                      value={formData.trainType}
+                      onChange={handleInputChange}
+                      label="Train Type"
+                      required
+                    >
+                      <MenuItem value="Express">Express</MenuItem>
+                      <MenuItem value="Superfast">Superfast</MenuItem>
+                      <MenuItem value="Rajdhani">Rajdhani</MenuItem>
+                      <MenuItem value="Shatabdi">Shatabdi</MenuItem>
+                      <MenuItem value="Duronto">Duronto</MenuItem>
+                      <MenuItem value="Vande Bharat">Vande Bharat</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Source Station"
+                    name="source"
+                    value={formData.source}
+                    onChange={handleInputChange}
+                    margin="normal"
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Destination Station"
+                    name="destination"
+                    value={formData.destination}
+                    onChange={handleInputChange}
+                    margin="normal"
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Departure Time"
+                    name="departureTime"
+                    type="datetime-local"
+                    value={formData.departureTime}
+                    onChange={handleInputChange}
+                    margin="normal"
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Arrival Time"
+                    name="arrivalTime"
+                    type="datetime-local"
+                    value={formData.arrivalTime}
+                    onChange={handleInputChange}
+                    margin="normal"
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Total Seats"
+                    name="totalSeats"
+                    type="number"
+                    value={formData.totalSeats}
+                    onChange={handleInputChange}
+                    margin="normal"
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Fare (INR)"
+                    name="fare"
+                    type="number"
+                    value={formData.fare}
+                    onChange={handleInputChange}
+                    margin="normal"
+                    required
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <FormControl component="fieldset" margin="normal">
+                    <FormLabel component="legend">Days of Operation</FormLabel>
+                    <FormGroup row>
+                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                        <FormControlLabel
+                          key={day}
+                          control={
+                            <Checkbox
+                              checked={formData.daysOfOperation.includes(day)}
+                              onChange={(e) => {
+                                const newDays = e.target.checked
+                                  ? [...formData.daysOfOperation, day]
+                                  : formData.daysOfOperation.filter(d => d !== day);
+                                setFormData(prev => ({
+                                  ...prev,
+                                  daysOfOperation: newDays
+                                }));
+                              }}
+                              name={day}
+                            />
+                          }
+                          label={day.slice(0, 3)}
+                        />
+                      ))}
+                    </FormGroup>
+                  </FormControl>
+                </Grid>
+              </Grid>
             </DialogContent>
-            <DialogActions sx={{ p: 2 }}>
-              <Button onClick={handleCloseDialog} color="secondary">
-                Cancel
-              </Button>
-              <Button
-                type="submit"
+            <DialogActions>
+              <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+              <Button 
+                type="submit" 
+                variant="contained" 
                 color="primary"
-                variant="contained"
-                disabled={
-                  !formData.trainNumber ||
-                  !formData.name ||
-                  !formData.source ||
-                  !formData.destination ||
-                  !formData.departureTime ||
-                  !formData.arrivalTime ||
-                  !formData.totalSeats ||
-                  !formData.fare ||
-                  formData.daysOfOperation.length === 0
-                }
+                disabled={submitting}
               >
-                {selectedTrain ? 'Update Train' : 'Add Train'}
+                {submitting ? 'Saving...' : 'Save'}
               </Button>
             </DialogActions>
           </form>
@@ -787,11 +642,11 @@ const TrainsPage = () => {
         <Snackbar
           open={snackbar.open}
           autoHideDuration={6000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
           anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
         >
           <Alert
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
             severity={snackbar.severity}
             sx={{ width: '100%' }}
           >

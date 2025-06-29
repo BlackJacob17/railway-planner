@@ -3,20 +3,12 @@ const Station = require('../models/Station');
 const Booking = require('../models/Booking');
 const { validationResult } = require('express-validator');
 
-// @desc    Get all trains with filtering and pagination
+// @desc    Get all trains without pagination
 // @route   GET /api/trains
 // @access  Public
 exports.getTrains = async (req, res) => {
     try {
-        const { 
-            search, 
-            source, 
-            destination, 
-            date, 
-            trainType, 
-            page = 1, 
-            limit = 10 
-        } = req.query;
+        const { search, source, destination, date, trainType } = req.query;
         
         let query = {};
         
@@ -29,47 +21,26 @@ exports.getTrains = async (req, res) => {
         }
         
         // Filter by source and destination
-        if (source) {
-            query.source = source;
-        }
-        
-        if (destination) {
-            query.destination = destination;
-        }
-        
-        // Filter by train type
-        if (trainType) {
-            query.trainType = trainType;
-        }
+        if (source) query.source = source;
+        if (destination) query.destination = destination;
+        if (trainType) query.trainType = trainType;
         
         // Filter by date (if provided)
-        let dayFilter = {};
         if (date) {
             const journeyDate = new Date(date);
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            const dayName = days[journeyDate.getDay()];
-            
-            // Add day filter to query
-            query.daysOfOperation = dayName;
+            query.daysOfOperation = days[journeyDate.getDay()];
         }
         
-        // Execute query with pagination
+        // Fetch all matching trains
         const trains = await Train.find(query)
             .populate('source', 'name code city')
             .populate('destination', 'name code city')
-            .limit(limit * 1)
-            .skip((page - 1) * limit)
             .sort({ name: 1 });
             
-        // Get total documents count
-        const count = await Train.countDocuments(query);
-        
         res.json({
             success: true,
             count: trains.length,
-            total: count,
-            totalPages: Math.ceil(count / limit),
-            currentPage: Number(page),
             data: trains
         });
     } catch (error) {

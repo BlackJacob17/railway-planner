@@ -1,11 +1,11 @@
 import api from '../api';
 
 const trainsAPI = {
-  // Get all trains
+  // Get all trains without pagination
   getTrains: async () => {
     try {
       const response = await api.get('/api/trains');
-      return response.data;
+      return response.data?.data || [];
     } catch (error) {
       console.error('Error fetching trains:', error);
       throw error;
