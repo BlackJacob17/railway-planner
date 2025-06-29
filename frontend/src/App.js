@@ -37,6 +37,7 @@ const NotFoundPage = lazy(() => import('./pages/errors/NotFoundPage'));
 const UnauthorizedPage = lazy(() => import('./pages/errors/UnauthorizedPage'));
 
 const AppRoutes = () => {
+  console.log('AppRoutes rendering...');
   return (
     <Routes>
       {/* --- Public Routes --- */}

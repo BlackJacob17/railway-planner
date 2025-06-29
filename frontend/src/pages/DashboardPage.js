@@ -78,10 +78,12 @@ const ActivityItem = styled(Box)(({ theme }) => ({
 }));
 
 export default function DashboardPage() {
+  console.log('DashboardPage rendering...');
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { user } = useSelector((state) => state.auth);
+  console.log('User from Redux:', user);
   const [recentBookings, setRecentBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

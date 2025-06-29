@@ -20,14 +20,18 @@ const AuthGuard = ({
 }) => {
   const { isAuthenticated, isInitialized } = useSelector((state) => state.auth);
   const location = useLocation();
+  
+  console.log('AuthGuard - isInitialized:', isInitialized, 'isAuthenticated:', isAuthenticated);
 
   // Show loading screen while checking auth state
   if (!isInitialized) {
+    console.log('AuthGuard - Not initialized, showing loading screen');
     return <LoadingScreen fullScreen />;
   }
 
   // If not authenticated and should redirect to login
   if (!isAuthenticated && redirectToLogin) {
+    console.log('AuthGuard - Not authenticated, redirecting to login');
     // Store the current location to redirect back after login
     const from = location.pathname + location.search;
     const redirectState = from !== '/login' 
