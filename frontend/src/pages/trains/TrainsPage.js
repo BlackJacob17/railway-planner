@@ -6,8 +6,7 @@ import { highlightPattern, containsPattern } from '../../utils/searchUtils';
 import priceUtils from '../../utils/priceBST';
 import PriceRangeFilter from '../../components/PriceRangeFilter';
 import api from '../../services/api';
-
-const { createPriceBST } = priceUtils;
+import { fetchTrains, deleteTrain, createTrain, updateTrain } from '../../store/slices/trainSlice';
 import {
   Box,
   Button,
@@ -55,12 +54,9 @@ import {
   Train as TrainIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
-import { 
-  fetchTrains, 
-  deleteTrain, 
-  createTrain, 
-  updateTrain 
-} from '../../store/slices/trainSlice';
+
+const { createPriceBST } = priceUtils;
+
 
 const TrainsPage = () => {
   const dispatch = useDispatch();
