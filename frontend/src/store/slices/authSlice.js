@@ -341,7 +341,7 @@ const authSlice = createSlice({
       state.token = null;
       state.error = payload;
       state.isInitialized = true;
-      console.error('Failed to load user:', payload);
+        console.error('Failed to load user:', payload);
     });
     
     // Logout

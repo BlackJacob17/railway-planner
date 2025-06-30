@@ -118,10 +118,13 @@ const TrainsPage = () => {
       const bst = createPriceBST(trains);
       setPriceBST(bst);
       
-      // Set initial price range
+      // Set initial price range from BST
       const minPrice = bst.getMinPrice();
       const maxPrice = bst.getMaxPrice();
-      setPriceRange({ min: minPrice, max: maxPrice });
+      setPriceRange({ 
+        min: minPrice, 
+        max: maxPrice 
+      });
     }
   }, [trains]);
 
@@ -328,9 +331,22 @@ const TrainsPage = () => {
           )}
         </Box>
 
+        {/* Price Range Filter */}
+        <Box sx={{ mt: 3, mb: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            Price Range (Using BST)
+          </Typography>
+          <PriceRangeFilter 
+            tickets={trains}
+            onPriceRangeChange={setPriceRange}
+            initialMin={priceRange.min}
+            initialMax={priceRange.max}
+          />
+        </Box>
+
         <Grid container spacing={3}>
           {/* Main Content */}
-          <Grid item xs={12} md={9}>
+          <Grid item xs={12}>
             <Card elevation={3} sx={{ mb: 4 }}>
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
@@ -450,15 +466,7 @@ const TrainsPage = () => {
             </Card>
           </Grid>
 
-          {/* Price Range Filter */}
-          <Grid item xs={12} md={3}>
-            <PriceRangeFilter 
-              tickets={trains}
-              onPriceRangeChange={setPriceRange}
-              initialMin={priceRange.min}
-              initialMax={priceRange.max}
-            />
-          </Grid>
+
         </Grid>
 
         {/* Add/Edit Train Dialog */}
