@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useSnackbar } from 'notistack';
 import { useNavigate } from 'react-router-dom';
 import { highlightPattern, containsPattern } from '../../utils/searchUtils';
-import priceUtils from '../../utils/priceBST';
+import { TicketPriceBST, createPriceBST } from '../../utils/priceBST';
 import PriceRangeFilter from '../../components/PriceRangeFilter';
 import api from '../../services/api';
 import { fetchTrains, deleteTrain, createTrain, updateTrain } from '../../store/slices/trainSlice';
@@ -55,7 +55,6 @@ import {
   Close as CloseIcon
 } from '@mui/icons-material';
 
-const { createPriceBST } = priceUtils;
 
 
 const TrainsPage = () => {

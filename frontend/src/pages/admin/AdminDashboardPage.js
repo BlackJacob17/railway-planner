@@ -1,23 +1,22 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { 
+import {
   Box, 
   Grid, 
-  Paper, 
   Typography, 
   Card, 
   CardContent, 
   useTheme,
   CircularProgress,
-  Divider,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
   Avatar,
-  IconButton,
   Chip,
-  Alert
+  Alert,
+  Divider,
+  IconButton
 } from '@mui/material';
 import {
   People as PeopleIcon,

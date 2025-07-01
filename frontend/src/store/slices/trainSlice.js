@@ -174,133 +174,128 @@ const trainSlice = createSlice({
   },
   extraReducers: (builder) => {
     // Fetch Trains
-    builder.addCase(fetchTrains.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(fetchTrains.fulfilled, (state, action) => {
-      state.loading = false;
-      // action.payload is now the data directly, not the full response
-      state.trains = action.payload?.data || [];
-      state.total = action.payload?.total || 0;
-      state.totalPages = action.payload?.totalPages || 1;
-      state.currentPage = action.payload?.currentPage || 1;
-    });
-    builder.addCase(fetchTrains.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    });
-
-    // Fetch Single Train
-    builder.addCase(fetchTrain.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(fetchTrain.fulfilled, (state, action) => {
-      state.loading = false;
-      state.currentTrain = action.payload;
-    });
-    builder.addCase(fetchTrain.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    });
-
-    // Search Trains
-    builder.addCase(searchTrains.pending, (state) => {
-      state.searching = true;
-      state.error = null;
-    });
-    builder.addCase(searchTrains.fulfilled, (state, action) => {
-      state.searching = false;
-      // action.payload is now the data directly, not the full response
-      state.searchResults = action.payload?.data || [];
-      state.total = action.payload?.total || 0;
-      state.totalPages = action.payload?.totalPages || 1;
-      state.currentPage = action.payload?.currentPage || 1;
-    });
-    builder.addCase(searchTrains.rejected, (state, action) => {
-      state.searching = false;
-      state.error = action.payload;
-    });
-
-    // Fetch Available Seats
-    builder.addCase(fetchAvailableSeats.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(fetchAvailableSeats.fulfilled, (state, action) => {
-      state.loading = false;
-      state.availableSeats = action.payload;
-    });
-    builder.addCase(fetchAvailableSeats.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    });
-
-    // Create Train
-    builder.addCase(createTrain.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(createTrain.fulfilled, (state, action) => {
-      state.loading = false;
-      state.trains.unshift(action.payload);
-      state.total += 1;
-    });
-    builder.addCase(createTrain.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    });
-
-    // Update Train
-    builder.addCase(updateTrain.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(updateTrain.fulfilled, (state, action) => {
-      state.loading = false;
-      const index = state.trains.findIndex(
-        (train) => train._id === action.payload._id
-      );
-      if (index !== -1) {
-        state.trains[index] = action.payload;
-      }
-      if (state.currentTrain?._id === action.payload._id) {
+    builder
+      .addCase(fetchTrains.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTrains.fulfilled, (state, action) => {
+        state.loading = false;
+        // action.payload is now the data directly, not the full response
+        state.trains = action.payload?.data || [];
+        state.total = action.payload?.total || 0;
+        state.totalPages = action.payload?.totalPages || 1;
+        state.currentPage = action.payload?.currentPage || 1;
+      })
+      .addCase(fetchTrains.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Fetch Single Train
+      .addCase(fetchTrain.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchTrain.fulfilled, (state, action) => {
+        state.loading = false;
         state.currentTrain = action.payload;
-      }
-      // Also update in search results if exists
-      const searchIndex = state.searchResults.findIndex(
-        (train) => train._id === action.payload._id
-      );
-      if (searchIndex !== -1) {
-        state.searchResults[searchIndex] = action.payload;
-      }
-    });
-    builder.addCase(updateTrain.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    });
-
-    // Delete Train
-    builder.addCase(deleteTrain.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    });
-    builder.addCase(deleteTrain.fulfilled, (state, action) => {
-      state.loading = false;
-      state.trains = state.trains.filter((train) => train._id !== action.payload);
-      state.searchResults = state.searchResults.filter(
-        (train) => train._id !== action.payload
-      );
-      state.total -= 1;
-      if (state.currentTrain?._id === action.payload) {
-        state.currentTrain = null;
-      }
-    });
-    builder.addCase(deleteTrain.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    });
+      })
+      .addCase(fetchTrain.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Search Trains
+      .addCase(searchTrains.pending, (state) => {
+        state.searching = true;
+        state.error = null;
+      })
+      .addCase(searchTrains.fulfilled, (state, action) => {
+        state.searching = false;
+        // action.payload is now the data directly, not the full response
+        state.searchResults = action.payload?.data || [];
+        state.total = action.payload?.total || 0;
+        state.totalPages = action.payload?.totalPages || 1;
+        state.currentPage = action.payload?.currentPage || 1;
+      })
+      .addCase(searchTrains.rejected, (state, action) => {
+        state.searching = false;
+        state.error = action.payload;
+      })
+      // Fetch Available Seats
+      .addCase(fetchAvailableSeats.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAvailableSeats.fulfilled, (state, action) => {
+        state.loading = false;
+        state.availableSeats = action.payload;
+      })
+      .addCase(fetchAvailableSeats.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Create Train
+      .addCase(createTrain.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createTrain.fulfilled, (state, action) => {
+        state.loading = false;
+        state.trains.unshift(action.payload);
+        state.total += 1;
+      })
+      .addCase(createTrain.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Update Train
+      .addCase(updateTrain.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateTrain.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.trains.findIndex(
+          (train) => train._id === action.payload._id
+        );
+        if (index !== -1) {
+          state.trains[index] = action.payload;
+        }
+        if (state.currentTrain?._id === action.payload._id) {
+          state.currentTrain = action.payload;
+        }
+        // Also update in search results if exists
+        const searchIndex = state.searchResults.findIndex(
+          (train) => train._id === action.payload._id
+        );
+        if (searchIndex !== -1) {
+          state.searchResults[searchIndex] = action.payload;
+        }
+      })
+      .addCase(updateTrain.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Delete Train
+      .addCase(deleteTrain.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteTrain.fulfilled, (state, action) => {
+        state.loading = false;
+        state.trains = state.trains.filter((train) => train._id !== action.payload);
+        state.searchResults = state.searchResults.filter(
+          (train) => train._id !== action.payload
+        );
+        state.total -= 1;
+        if (state.currentTrain?._id === action.payload) {
+          state.currentTrain = null;
+        }
+      })
+      .addCase(deleteTrain.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
   },
 });
 

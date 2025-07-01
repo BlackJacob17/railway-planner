@@ -101,8 +101,4 @@ class PriceNode {
     return bst;
   }
   
-  export default {
-    TicketPriceBST,
-    createPriceBST
-  };
-  
+  export { TicketPriceBST, createPriceBST };

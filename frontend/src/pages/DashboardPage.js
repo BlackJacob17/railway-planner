@@ -14,11 +14,7 @@ import {
   CircularProgress,
   Alert,
   Skeleton,
-  Chip,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText
+  Chip
 } from '@mui/material';
 import { format } from 'date-fns';
 import {
@@ -27,11 +23,10 @@ import {
   Explore as ExploreIcon,
   LocalOffer as LocalOfferIcon,
   Assessment as AssessmentIcon,
-  AirplanemodeActive as AirplaneTicketIcon,
-  Receipt as ReceiptIcon,
   Loyalty as LoyaltyIcon,
   AccountBalanceWallet as SavingsIcon,
   History as HistoryIcon,
+  Receipt as ReceiptIcon,
   ListAlt as ListAltIcon,
   HelpOutline as HelpOutlineIcon
 } from '@mui/icons-material';
@@ -81,7 +76,8 @@ export default function DashboardPage() {
   console.log('DashboardPage rendering...');
   const navigate = useNavigate();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  // Using isMobile for future responsive design
+  useMediaQuery(theme.breakpoints.down('md'));
   const { user } = useSelector((state) => state.auth);
   console.log('User from Redux:', user);
   const [recentBookings, setRecentBookings] = useState([]);

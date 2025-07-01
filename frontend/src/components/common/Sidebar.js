@@ -8,7 +8,6 @@ import {
   ListItemIcon, 
   ListItemText, 
   Collapse, 
-  Toolbar, 
   IconButton, 
   Typography, 
   Box, 
@@ -28,8 +27,7 @@ import {
   ExpandLess,
   ExpandMore,
   People as PeopleIcon,
-  Timeline as TimelineIcon,
-  Receipt as ReceiptIcon,
+
   Help as HelpIcon,
   ContactSupport as ContactSupportIcon,
   Info as InfoIcon,
@@ -89,7 +87,7 @@ const Sidebar = ({ open, onClose, onToggle, isMobile }) => {
   const location = useLocation();
   const { user } = useAuth();
   const [expanded, setExpanded] = useState({});
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
+  useMediaQuery(theme.breakpoints.down('md'));
 
   // Auto-close mobile menu when route changes
   useEffect(() => {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Box, Container, Paper, Typography } from '@mui/material';
+import { Container, Paper, Typography } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
 const AuthWrapper = styled('div')(({ theme }) => ({

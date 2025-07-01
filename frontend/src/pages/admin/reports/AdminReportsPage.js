@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box, Container, Typography, Paper, Grid, Card, CardContent,
   CircularProgress, Alert, Tabs, Tab, FormControl, InputLabel,
@@ -7,9 +7,20 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+  Tooltip, Legend, ResponsiveContainer, LineChart, 
+  Line, PieChart, Pie, Cell 
+} from 'recharts';
 import { format, subDays } from 'date-fns';
-import { bookingsAPI, trainsAPI, stationsAPI } from '../../../services/api';
+
+// Import statements for API services are kept for future use
+// import { bookingsAPI, trainsAPI, stationsAPI } from '../../../services/api';
+
+// Icons
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import PeopleIcon from '@mui/icons-material/People';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -31,9 +42,53 @@ const ReportsPage = () => {
 
   useEffect(() => {
     fetchReportData();
-  }, [dateRange, reportType]);
+  }, [dateRange, reportType, fetchReportData]);
 
-  const fetchReportData = async () => {
+  // Mock data generation functions
+  const generateMockBookings = useCallback(() => {
+    const data = [];
+    
+    for (let i = 0; i < 7; i++) {
+      data.push({
+        date: format(subDays(new Date(), 6 - i), 'MMM dd'),
+        confirmed: Math.floor(Math.random() * 100) + 50,
+        cancelled: Math.floor(Math.random() * 30) + 10,
+        pending: Math.floor(Math.random() * 20) + 5
+      });
+    }
+    return data;
+  }, []);
+
+  const generateMockRevenue = useCallback(() => {
+    const data = [];
+    for (let i = 0; i < 12; i++) {
+      data.push({
+        month: format(new Date(2023, i, 1), 'MMM'),
+        revenue: Math.floor(Math.random() * 50000) + 10000,
+        bookings: Math.floor(Math.random() * 500) + 200
+      });
+    }
+    return data;
+  }, []);
+
+  const generateMockTrains = useCallback(() => {
+    const trains = ['Rajdhani Express', 'Shatabdi', 'Duronto', 'Garib Rath', 'Vande Bharat'];
+    return trains.map(train => ({
+      name: train,
+      bookings: Math.floor(Math.random() * 1000) + 100,
+      revenue: Math.floor(Math.random() * 500000) + 100000
+    }));
+  }, []);
+
+  const generateMockStations = useCallback(() => {
+    const stations = ['New Delhi', 'Mumbai', 'Chennai', 'Kolkata', 'Bengaluru', 'Hyderabad'];
+    return stations.map(station => ({
+      name: station,
+      value: Math.floor(Math.random() * 1000) + 100
+    }));
+  }, []);
+
+  const fetchReportData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -56,54 +111,9 @@ const ReportsPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [generateMockBookings, generateMockRevenue, generateMockTrains, generateMockStations]);
 
-  // Mock data generation functions
-  const generateMockBookings = () => {
-    const data = [];
-    const statuses = ['confirmed', 'cancelled', 'pending'];
-    
-    for (let i = 0; i < 7; i++) {
-      data.push({
-        date: format(subDays(new Date(), 6 - i), 'MMM dd'),
-        confirmed: Math.floor(Math.random() * 100) + 50,
-        cancelled: Math.floor(Math.random() * 30) + 10,
-        pending: Math.floor(Math.random() * 20) + 5
-      });
-    }
-    return data;
-  };
 
-  const generateMockRevenue = () => {
-    const data = [];
-    for (let i = 0; i < 12; i++) {
-      data.push({
-        month: format(new Date(2023, i, 1), 'MMM'),
-        revenue: Math.floor(Math.random() * 100000) + 50000
-      });
-    }
-    return data;
-  };
-
-  const generateMockTrains = () => {
-    return [
-      { name: 'Rajdhani Express', value: 35 },
-      { name: 'Shatabdi Express', value: 25 },
-      { name: 'Duronto Express', value: 20 },
-      { name: 'Garib Rath', value: 15 },
-      { name: 'Others', value: 5 }
-    ];
-  };
-
-  const generateMockStations = () => {
-    return [
-      { name: 'New Delhi', value: 45 },
-      { name: 'Mumbai Central', value: 38 },
-      { name: 'Chennai Central', value: 32 },
-      { name: 'Howrah', value: 28 },
-      { name: 'Others', value: 22 }
-    ];
-  };
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);

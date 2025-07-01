@@ -9,6 +9,31 @@ const useNotification = () => {
   const [open, setOpen] = useState(false);
   const timerRef = useRef(null);
 
+  /**
+   * Close the currently open notification
+   */
+  const handleClose = useCallback((event, reason) => {
+    if (reason === 'clickaway' && notification?.persist) {
+      return;
+    }
+    
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    setOpen(false);
+    
+    if (notification?.onClose) {
+      notification.onClose(event, reason);
+    }
+    
+    // Reset notification after the close animation completes
+    setTimeout(() => {
+      setNotification(null);
+    }, 300);
+  }, [notification]);
+
   // Auto-hide the notification after a delay
   useEffect(() => {
     if (open && notification?.autoHideDuration !== false) {
@@ -22,7 +47,7 @@ const useNotification = () => {
         clearTimeout(timerRef.current);
       }
     };
-  }, [open, notification]);
+  }, [open, notification, handleClose]);
 
   /**
    * Show a success notification
@@ -35,7 +60,7 @@ const useNotification = () => {
       severity: 'success',
       ...options,
     });
-  }, []);
+  }, [showNotification]);
 
   /**
    * Show an error notification
@@ -49,7 +74,7 @@ const useNotification = () => {
       severity: 'error',
       ...options,
     });
-  }, []);
+  }, [showNotification]);
 
   /**
    * Show a warning notification
@@ -62,7 +87,7 @@ const useNotification = () => {
       severity: 'warning',
       ...options,
     });
-  }, []);
+  }, [showNotification]);
 
   /**
    * Show an info notification
@@ -75,7 +100,7 @@ const useNotification = () => {
       severity: 'info',
       ...options,
     });
-  }, []);
+  }, [showNotification]);
 
   /**
    * Show a custom notification
@@ -113,36 +138,14 @@ const useNotification = () => {
       key: key || Date.now(),
       onClose,
       anchorOrigin,
+      persist,
       ...otherOptions,
     });
     
     setOpen(true);
   }, []);
 
-  /**
-   * Close the currently open notification
-   */
-  const handleClose = useCallback((event, reason) => {
-    if (reason === 'clickaway' && notification?.persist) {
-      return;
-    }
-    
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    
-    setOpen(false);
-    
-    if (notification?.onClose) {
-      notification.onClose(event, reason);
-    }
-    
-    // Reset notification after the close animation completes
-    setTimeout(() => {
-      setNotification(null);
-    }, 300);
-  }, [notification]);
+
 
   /**
    * Clear all pending notifications
