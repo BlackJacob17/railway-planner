@@ -123,7 +123,10 @@ const trainSlice = createSlice({
       })
       .addCase(fetchTrains.fulfilled, (state, action) => {
         state.loading = false;
-        state.trains = action.payload;
+        state.trains = action.payload?.data || [];
+        state.total = action.payload?.total || 0;
+        state.totalPages = action.payload?.totalPages || 1;
+        state.currentPage = action.payload?.currentPage || 1;
       })
       .addCase(fetchTrains.rejected, (state, action) => {
         state.loading = false;
@@ -170,26 +173,6 @@ const trainSlice = createSlice({
       .addCase(deleteTrain.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
-  },
-  extraReducers: (builder) => {
-    // Fetch Trains
-    builder
-      .addCase(fetchTrains.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchTrains.fulfilled, (state, action) => {
-        state.loading = false;
-        // action.payload is now the data directly, not the full response
-        state.trains = action.payload?.data || [];
-        state.total = action.payload?.total || 0;
-        state.totalPages = action.payload?.totalPages || 1;
-        state.currentPage = action.payload?.currentPage || 1;
-      })
-      .addCase(fetchTrains.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
       })
       // Fetch Single Train
       .addCase(fetchTrain.pending, (state) => {
@@ -211,7 +194,6 @@ const trainSlice = createSlice({
       })
       .addCase(searchTrains.fulfilled, (state, action) => {
         state.searching = false;
-        // action.payload is now the data directly, not the full response
         state.searchResults = action.payload?.data || [];
         state.total = action.payload?.total || 0;
         state.totalPages = action.payload?.totalPages || 1;
