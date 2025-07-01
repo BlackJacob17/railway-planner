@@ -132,48 +132,6 @@ const trainSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Create Train
-      .addCase(createTrain.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(createTrain.fulfilled, (state, action) => {
-        state.loading = false;
-        state.trains.push(action.payload);
-      })
-      .addCase(createTrain.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-      // Update Train
-      .addCase(updateTrain.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(updateTrain.fulfilled, (state, action) => {
-        state.loading = false;
-        const index = state.trains.findIndex(train => train._id === action.payload._id);
-        if (index !== -1) {
-          state.trains[index] = action.payload;
-        }
-      })
-      .addCase(updateTrain.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-      // Delete Train
-      .addCase(deleteTrain.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(deleteTrain.fulfilled, (state, action) => {
-        state.loading = false;
-        state.trains = state.trains.filter(train => train._id !== action.payload);
-      })
-      .addCase(deleteTrain.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
       // Fetch Single Train
       .addCase(fetchTrain.pending, (state) => {
         state.loading = true;
@@ -237,19 +195,14 @@ const trainSlice = createSlice({
       })
       .addCase(updateTrain.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.trains.findIndex(
-          (train) => train._id === action.payload._id
-        );
+        const index = state.trains.findIndex(train => train._id === action.payload._id);
         if (index !== -1) {
           state.trains[index] = action.payload;
         }
         if (state.currentTrain?._id === action.payload._id) {
           state.currentTrain = action.payload;
         }
-        // Also update in search results if exists
-        const searchIndex = state.searchResults.findIndex(
-          (train) => train._id === action.payload._id
-        );
+        const searchIndex = state.searchResults.findIndex(train => train._id === action.payload._id);
         if (searchIndex !== -1) {
           state.searchResults[searchIndex] = action.payload;
         }
@@ -265,14 +218,12 @@ const trainSlice = createSlice({
       })
       .addCase(deleteTrain.fulfilled, (state, action) => {
         state.loading = false;
-        state.trains = state.trains.filter((train) => train._id !== action.payload);
-        state.searchResults = state.searchResults.filter(
-          (train) => train._id !== action.payload
-        );
-        state.total -= 1;
+        state.trains = state.trains.filter(train => train._id !== action.payload);
+        state.total = Math.max(0, state.total - 1);
         if (state.currentTrain?._id === action.payload) {
           state.currentTrain = null;
         }
+        state.searchResults = state.searchResults.filter(train => train._id !== action.payload);
       })
       .addCase(deleteTrain.rejected, (state, action) => {
         state.loading = false;
