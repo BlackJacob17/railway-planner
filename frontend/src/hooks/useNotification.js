@@ -34,6 +34,8 @@ const useNotification = () => {
     }, 300);
   }, [notification]);
 
+
+
   // Auto-hide the notification after a delay
   useEffect(() => {
     if (open && notification?.autoHideDuration !== false) {
