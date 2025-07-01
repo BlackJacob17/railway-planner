@@ -15,8 +15,29 @@
       "dest": "https://railway-planner-y1h5.vercel.app/api/$1"
     },
     {
-      "src": "/(.*)",
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "/favicon.ico"
+    },
+    {
+      "src": "/logo192.png",
+      "dest": "/logo192.png"
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "/manifest.json"
+    },
+    {
+      "src": "^/[^/]+$",
       "dest": "/index.html"
+    },
+    {
+      "src": "^/static/.+$",
+      "status": 404,
+      "dest": "/404.html"
     }
   ],
   "env": {
